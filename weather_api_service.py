@@ -12,6 +12,7 @@ Celsius: TypeAlias = float
 
 
 class WindDirection(IntEnum):
+    """Класс для описания направлений ветра."""
     North = 0
     Northeast = 45
     East = 90
@@ -24,6 +25,7 @@ class WindDirection(IntEnum):
 
 @dataclass(slots=True, frozen=True)
 class Weather:
+    """Класс для описания всех нужных полей опроса."""
     location: str
     temperature: Celsius
     temperature_feeling: Celsius
@@ -35,7 +37,7 @@ class Weather:
 
 
 def get_weather(coordinates=Coordinates) -> Weather:
-    """Requests the weather in OpenWeather API and returns it"""
+    """Запрашивает погоду в Open Weather API и возвращает ее."""
     openweather_response = _get_openweather_response(
         longitude=coordinates.longitude, latitude=coordinates.latitude
     )
@@ -44,7 +46,8 @@ def get_weather(coordinates=Coordinates) -> Weather:
 
 
 def _get_openweather_response(latitude: float, longitude: float) -> str:
-    url = config.CURRENT_WEATHER_API_CALL.format(latitude=latitude, longitude=longitude)
+    url = config.CURRENT_WEATHER_API_CALL.format(latitude=latitude,
+                                                 longitude=longitude)
     return urlopen(url).read()
 
 
@@ -78,7 +81,8 @@ def _parse_description(openweather_dict) -> str:
     return str(openweather_dict['weather'][0]['description']).capitalize()
 
 
-def _parse_sun_time(openweather_dict: dict, time: Literal["sunrise", "sunset"]) -> datetime:
+def _parse_sun_time(openweather_dict: dict,
+                    time: Literal["sunrise", "sunset"]) -> datetime:
     return datetime.fromtimestamp(openweather_dict['sys'][time])
 
 
