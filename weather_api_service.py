@@ -5,7 +5,6 @@ from datetime import datetime
 from enum import IntEnum
 import json
 
-from coordinates import Coordinates
 from config_reader import config
 
 Celsius: TypeAlias = float
@@ -36,10 +35,10 @@ class Weather:
     sunset: datetime
 
 
-def get_weather(coordinates=Coordinates) -> Weather:
+def get_weather(latitude, longitude) -> Weather:
     """Запрашивает погоду в Open Weather API и возвращает ее."""
     openweather_response = _get_openweather_response(
-        longitude=coordinates.longitude, latitude=coordinates.latitude
+        longitude=longitude, latitude=latitude
     )
     weather = _parse_openweather_response(openweather_response)
     return weather

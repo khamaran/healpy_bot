@@ -11,7 +11,6 @@ from aiogram.utils import deep_linking
 from config_reader import config
 from aiogram import Bot, Dispatcher, types
 from dotenv import load_dotenv
-from coordinates import get_coordinates
 from currency import CurrencyConversionState
 from polls import PollState
 from weather_api_service import get_weather
@@ -27,28 +26,32 @@ polls_owners = {}
 logging.basicConfig(level=logging.INFO)
 
 # Initialize bot and dispatcher
-bot = Bot(token=config.bot_token.get_secret_value(), parse_mode="HTML")
+PROXY_URL = 'http://proxy.server:3128'
+bot = Bot(token=config.bot_token.get_secret_value(), parse_mode="HTML", proxy=PROXY_URL)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 FOX_URL = 'https://randomfox.ca/floof/'
 CURRENCY_URL = "https://api.apilayer.com/exchangerates_data/convert?"
 
-
-@dp.message_handler(Command("start"))
-async def cmd_start(message: types.Message):
+def get_main_keyboard():
     kb = [
         [
-            types.KeyboardButton(text="Прогноз погоды"),
+            types.KeyboardButton(text="Прогноз погоды"
+                                 ),
             types.KeyboardButton(text="Конвертация валюты"),
             types.KeyboardButton(text="Пришли лису!"),
             types.KeyboardButton(text="Создать опрос"),
         ],
     ]
-    keyboard = types.ReplyKeyboardMarkup(
+    return types.ReplyKeyboardMarkup(
         keyboard=kb,
         resize_keyboard=True
     )
-    await message.answer("Привет! Выбери пункт меню:", reply_markup=keyboard)
+
+
+@dp.message_handler(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("Привет! Выбери пункт меню:", reply_markup=get_main_keyboard())
 
 
 def get_new_image():
@@ -73,16 +76,32 @@ async def fox(message: types.Message):
     await bot.send_photo(message.chat.id, get_new_image())
 
 
-def weather():
+def weather(latitude, longitude):
     """Возвращает сообщение о температуре погоды."""
-    wthr = get_weather(get_coordinates())
+    wthr = get_weather(latitude, longitude)
     return f'{wthr.location}, {wthr.description}\n' \
            f'Temperature is {wthr.temperature}°C, feels like {wthr.temperature_feeling}°C'
 
 
+def get_location_keyboard():
+    keyboard = types.ReplyKeyboardMarkup()
+    button = types.KeyboardButton("Поделиться локацией", request_location=True)
+    keyboard.add(button)
+    return keyboard
+
+
+@dp.message_handler(content_types=['location'])
+async def handle_location(message: types.Message):
+    lat = message.location.latitude
+    lon = message.location.longitude
+    reply = weather(lat, lon)
+    await message.answer(reply, reply_markup=get_main_keyboard())
+
+
 @dp.message_handler(Text("Прогноз погоды"))
-async def show_weather(message: types.Message):
-    await message.answer(text=weather())
+async def cmd_locate_me(message: types.Message):
+    reply = "Нажмите на кнопку внизу, чтобы поделиться своей локацией!"
+    await message.answer(reply, reply_markup=get_location_keyboard())
 
 
 def conversion(currency_amount, currency_from, currency_to):
@@ -171,8 +190,7 @@ async def poll(message: types.Message):
 
 @dp.message_handler(lambda message: message.text == "Отмена")
 async def action_cancel(message: types.Message):
-    remove_keyboard = types.ReplyKeyboardRemove()
-    await message.answer("Действие отменено. Введите /start, чтобы начать заново.", reply_markup=remove_keyboard)
+    await message.answer('Действие отменено.', reply_markup=get_main_keyboard())
 
 
 @dp.message_handler(content_types=["poll"])
