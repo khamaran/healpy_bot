@@ -87,6 +87,7 @@ def get_location_keyboard():
     keyboard = types.ReplyKeyboardMarkup()
     button = types.KeyboardButton("Поделиться локацией", request_location=True)
     keyboard.add(button)
+    keyboard.add(types.KeyboardButton(text="Отмена"))
     return keyboard
 
 
